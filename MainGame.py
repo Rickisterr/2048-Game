@@ -89,6 +89,7 @@ class GameBoard:
     
     #### Member function used to randomly generate board squares in empty spaces
     def generateSquare(self):
+        
         if(len(self.emptySquares) == 0):                    # If no empty squares, skip square generation
             return
         
@@ -101,6 +102,36 @@ class GameBoard:
         self.__BoardGrid[self.emptySquares[GenMax] // 4][self.emptySquares[GenMax] % 4] = 2
         
         return
+    
+    
+    
+    #### Member function to perform moves on the board according to inputs
+    def movePieces(self, dir):                  # dir = 1, 2, 3, 4 for left, up, down and right directional moves respectively
+        
+        if(dir in [1, 4]):                      # If movement is along horizontal axis, change second piece to 0 and double the first
+            for iter_eqls in self.adjacentEqls: # Iterating through the list of adjacent equal pieces
+                
+                if(iter_eqls[2] == 0):          # Only checking equal pieces that are along horizontal axis
+                        # Doubling first piece and emptying second
+                        self.__BoardGrid[iter_eqls[0]][iter_eqls[1]] = 2 * self.__BoardGrid[iter_eqls[0]][iter_eqls[1]]
+                        
+                        self.__BoardGrid[iter_eqls[0]][iter_eqls[1] + 1] = 0
+                        
+                        # Removing the adjacentally equal squares from adjacentEqls list
+                        self.adjacentEqls.remove(iter_eqls)
+            
+            # After merging equal squares, all squares are moved in specified direction where possible
+            
+                
+        if(dir in [2, 3]):                      # If movement is along vertical axis, change second piece to 0 and double the first
+            for iter_eqls in self.adjacentEqls:
+                
+                if(iter_eqls[2] == 1):
+                        self.__BoardGrid[iter_eqls[0]][iter_eqls[1]] = 2 * self.__BoardGrid[iter_eqls[0]][iter_eqls[1]]
+                        
+                        self.__BoardGrid[iter_eqls[0] + 1][iter_eqls[1]] = 0
+                        
+                        self.adjacentEqls.remove(iter_eqls)
     
     
     
