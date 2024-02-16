@@ -19,6 +19,7 @@ class GameBoard:
     
     #### Member variables that describe the state of the board
     def __init__(self):
+        
         """
         The positions of the board are displayed as a nested list where the
         rows are signified by the elements in the outer list and the index of
@@ -26,6 +27,7 @@ class GameBoard:
         column of the element.
         Thus, to access a particular element, BoardGrid[row-1][column-1] is used.
         """
+        
         # Privatized to class
         self.__BoardGrid = [ [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0] ]                  # Describes the layout of the board (0 indicates empty square in grid)
         
@@ -109,30 +111,76 @@ class GameBoard:
     def movePieces(self, dir):                  # dir = 1, 2, 3, 4 for left, up, down and right directional moves respectively
         
         if(dir in [1, 4]):                      # If movement is along horizontal axis, change second piece to 0 and double the first
-            for iter_eqls in self.adjacentEqls: # Iterating through the list of adjacent equal pieces
-                
-                if(iter_eqls[2] == 0):          # Only checking equal pieces that are along horizontal axis
-                        # Doubling first piece and emptying second
-                        self.__BoardGrid[iter_eqls[0]][iter_eqls[1]] = 2 * self.__BoardGrid[iter_eqls[0]][iter_eqls[1]]
+            if(len(self.adjacentEqls) != 0):
+                for iter_eqls in self.adjacentEqls: # Iterating through the list of adjacent equal pieces
+                    
+                    if(iter_eqls[2] == 0):          # Only checking equal pieces that are along horizontal axis
                         
-                        self.__BoardGrid[iter_eqls[0]][iter_eqls[1] + 1] = 0
+                            # Doubling first piece and emptying second
+                            self.__BoardGrid[iter_eqls[0]-1][iter_eqls[1]-1] = 2 * self.__BoardGrid[iter_eqls[0]-1][iter_eqls[1]-1]
+                            
+                            self.__BoardGrid[iter_eqls[0]-1][iter_eqls[1]-2] = 0
+                            
+                            # Removing the adjacentally equal squares from adjacentEqls list
+                            self.adjacentEqls.remove(iter_eqls)
+            
+            # Moving all pieces right where possible
+            if(dir == 4):
+                for iterRow in range(0, 4):
+                    
+                    for iterCol in range(0, 3):
+                        iterCol_rev = 2 - iterCol           # Iterating backwards through a row's column
+                        temp = iterCol_rev + 1
                         
-                        # Removing the adjacentally equal squares from adjacentEqls list
-                        self.adjacentEqls.remove(iter_eqls)
+                        # Skip square if current square is empty
+                        if(self.__BoardGrid[iterRow][iterCol_rev] == 0):
+                            continue
+                        
+                        # Finding the next non empty square
+                        while((temp < 4) and (self.__BoardGrid[iterRow][temp] == 0)):
+                            temp += 1
+                        
+                        temp -= 1
+                        
+                        # Swapping empty space and current piece
+                        if(temp >= iterCol_rev + 1):
+                            self.__BoardGrid[iterRow][iterCol_rev], self.__BoardGrid[iterRow][temp] = self.__BoardGrid[iterRow][temp], self.__BoardGrid[iterRow][iterCol_rev]
             
-            # After merging equal squares, all squares are moved in specified direction where possible
             
-                
-        if(dir in [2, 3]):                      # If movement is along vertical axis, change second piece to 0 and double the first
+            if(dir == 1):
+                for iterRow in range(0, 4):
+                    
+                    for iterCol in range(1, 4):
+                        temp = iterCol - 1
+                        
+                        # Skip square if current square is empty
+                        if(self.__BoardGrid[iterRow][iterCol] == 0):
+                            continue
+                        
+                        # Finding the next non empty square
+                        while((temp >= 0) and (self.__BoardGrid[iterRow][temp] == 0)):
+                            temp -= 1
+                        
+                        temp += 1
+                        
+                        # Swapping empty space and current piece
+                        if(temp <= iterCol - 1):
+                            self.__BoardGrid[iterRow][iterCol], self.__BoardGrid[iterRow][temp] = self.__BoardGrid[iterRow][temp], self.__BoardGrid[iterRow][iterCol]
+                        
+        
+            
+        
+        # If movement is along vertical axis, change second piece to 0 and double the first
+        if(dir in [2, 3]):
             for iter_eqls in self.adjacentEqls:
                 
                 if(iter_eqls[2] == 1):
-                        self.__BoardGrid[iter_eqls[0]][iter_eqls[1]] = 2 * self.__BoardGrid[iter_eqls[0]][iter_eqls[1]]
+                        self.__BoardGrid[iter_eqls[0]-1][iter_eqls[1]-1] = 2 * self.__BoardGrid[iter_eqls[0]-1][iter_eqls[1]-1]
                         
-                        self.__BoardGrid[iter_eqls[0] + 1][iter_eqls[1]] = 0
+                        self.__BoardGrid[iter_eqls[0]-2][iter_eqls[1]-1] = 0
                         
                         self.adjacentEqls.remove(iter_eqls)
-    
+
     
     
     #### Member function used for debugging and tracking purposes (displays all variables)
@@ -172,12 +220,34 @@ def main():
     Board = GameBoard()
     
     # Initially checking state and generating the first square to begin playing
-    Board.checkState()
     Board.generateSquare()
+    Board.checkState()
+    
+    Board.displayCheck()
     
     # Moving to loop to keep the game running until state reaches deadend or winning state
     while(Board.state not in [2, 3]):
-        print("Currently unending")
+        print("\n")
+        
+        N = input("Enter a move: ").upper()
+        
+        match N:
+            case "A":
+                Board.movePieces(1)
+            case "D":
+                Board.movePieces(4)
+            case "W":
+                Board.movePieces(2)
+            case "S":
+                Board.movePieces(3)
+        
+        Board.checkState()
+        
+        Board.generateSquare()
+        
+        Board.checkState()
+        
+        Board.displayCheck()
     
     # Win state (2048 reached)
     if(Board.state == 3):
@@ -212,4 +282,4 @@ def main():
 
 
 if(__name__ == "__main__"):
-    debug()
+    main()
