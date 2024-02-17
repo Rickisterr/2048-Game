@@ -31,11 +31,6 @@ class GameBoard:
         # Privatized to class
         self.__BoardGrid = [ [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0] ]                  # Describes the layout of the board (0 indicates empty square in grid)
         
-        self.adjacentEqls = []      # contains info on the adjacent squares which are equal
-        # Each element in adjacentEqls is depicted as [row, column, axis]
-        # where (row, column) and (row, column+1) are equal if axis is 0
-        # and (row, column) and (row+1, column) are equal if axis is 1
-        
         self.state = 1              # describes state of the board: 1-playable, 2-deadend, 3-winner
         
         self.emptySquares = []      # describes the index number of all empty squares at a time on the board (0 is top left, 15 is bottom right)
@@ -46,7 +41,6 @@ class GameBoard:
     def checkState(self):
         
         self.state = 2              # State is initialized to be deadend unless an empty space or 2048 present or playable squares left
-        self.adjacentEqls = []      # adjacentEqls is reset for rechecking
         self.emptySquares = []      # resetting emptySquares to recheck
         
         for iterRow in range(1, 5):             # Iterating through Rows
@@ -69,16 +63,14 @@ class GameBoard:
                         # Next, check if two horizontally adjacent elements are equal; if so, playable
                         if(self.__BoardGrid[iterRow-1][iterCol-1] == self.__BoardGrid[iterRow-1][iterCol]):
                             self.state = 1
+                            continue
                             
-                            self.adjacentEqls.append( [ iterRow, iterCol, 0 ] ) # Indicates (iterRow, iterCol) and (iterRow, iterCol+1) are equal
-                    
                     ## Vertically equal squares check
                     if(iterRow != 4):                                         # Checking that iterRow is not pointing to the index of the last row
                         # Next, check if two vertically adjacent elements are equal; if so, playable
                         if(self.__BoardGrid[iterRow-1][iterCol-1] == self.__BoardGrid[iterRow][iterCol-1]):
                             self.state = 1
-                            
-                            self.adjacentEqls.append( [ iterRow, iterCol, 1 ] ) # Indicates (iterRow, iterCol) and (iterRow+1, iterCol) are equal
+                            continue
         
         """
         If no other condition is met, the state remains deadend,
@@ -86,6 +78,52 @@ class GameBoard:
         and returned; otherwise met condition is communicated by state
         """
         return
+    
+    
+    
+    #### Member function used to combine any adjacent equal elements
+    def adjacentAdd(self, dir):                             # dir = 1, 2, 3, 4 for left, up, down, right
+        if(dir in [1, 4]):
+            
+            # Checking for horizontally adjacent squares to combine and combining according to direction
+            for iterRow in range(0, 4):
+                for iterCol in range(0, 3):
+                    i = iterCol + 1
+                    
+                    # Finding the next non empty piece
+                    while((i < 4) and (self.__BoardGrid[iterRow][i] == 0)):
+                        i += 1
+                    
+                    # If next non empty element is equal to current, double current and empty the other square
+                    if((i < 4) and (self.__BoardGrid[iterRow][i] == self.__BoardGrid[iterRow][iterCol])):
+                        if(dir == 1):
+                            self.__BoardGrid[iterRow][iterCol] = 2 * self.__BoardGrid[iterRow][iterCol]
+                            self.__BoardGrid[iterRow][i] = 0
+                        else:
+                            self.__BoardGrid[iterRow][i] = 2 * self.__BoardGrid[iterRow][i]
+                            self.__BoardGrid[iterRow][iterCol] = 0
+        
+        elif(dir in [2, 3]):
+            
+            # Checking for vertically adjacent squares to combine and combining according to direction
+            for iterRow in range(0, 3):
+                for iterCol in range(0, 4):
+                    i = iterRow + 1
+                    
+                    # Finding the next non empty piece
+                    while((i < 4) and (self.__BoardGrid[i][iterCol] == 0)):
+                        i += 1
+                    
+                    # If next non empty element is equal to current, double current and empty the other square
+                    if((i < 4) and (self.__BoardGrid[i][iterCol] == self.__BoardGrid[iterRow][iterCol])):
+                        if(dir == 1):
+                            self.__BoardGrid[iterRow][iterCol] = 2 * self.__BoardGrid[iterRow][iterCol]
+                            self.__BoardGrid[i][iterCol] = 0
+                        else:
+                            self.__BoardGrid[i][iterCol] = 2 * self.__BoardGrid[i][iterCol]
+                            self.__BoardGrid[iterRow][iterCol] = 0
+                    
+                    
 
     
     
@@ -110,19 +148,10 @@ class GameBoard:
     #### Member function to perform moves on the board according to inputs
     def movePieces(self, dir):                  # dir = 1, 2, 3, 4 for left, up, down and right directional moves respectively
         
+        # Combining all elements before moving
+        self.adjacentAdd(dir)
+        
         if(dir in [1, 4]):                      # If movement is along horizontal axis, change second piece to 0 and double the first
-            if(len(self.adjacentEqls) != 0):
-                for iter_eqls in self.adjacentEqls: # Iterating through the list of adjacent equal pieces
-                    
-                    if(iter_eqls[2] == 0):          # Only checking equal pieces that are along horizontal axis
-                        
-                            # Doubling first piece and emptying second
-                            self.__BoardGrid[iter_eqls[0]-1][iter_eqls[1]-1] = 2 * self.__BoardGrid[iter_eqls[0]-1][iter_eqls[1]-1]
-                            
-                            self.__BoardGrid[iter_eqls[0]-1][iter_eqls[1]-2] = 0
-                            
-                            # Removing the adjacentally equal squares from adjacentEqls list
-                            self.adjacentEqls.remove(iter_eqls)
             
             # Moving all pieces right where possible
             if(dir == 4):
@@ -160,27 +189,69 @@ class GameBoard:
                         # Finding the next non empty square
                         while((temp >= 0) and (self.__BoardGrid[iterRow][temp] == 0)):
                             temp -= 1
-                        
+                            
                         temp += 1
                         
                         # Swapping empty space and current piece
                         if(temp <= iterCol - 1):
                             self.__BoardGrid[iterRow][iterCol], self.__BoardGrid[iterRow][temp] = self.__BoardGrid[iterRow][temp], self.__BoardGrid[iterRow][iterCol]
+            
+            
+            # Combining new adjacent equal elements
+            for iterRow in range(0, 3):
+                for iterCol in range(0, 2):
+                    if(self.__BoardGrid[iterRow][iterCol] == self.__BoardGrid[iterRow][iterCol+1]):
+                        self.__BoardGrid[iterRow][iterCol], self.__BoardGrid[iterRow][iterCol+1] = self.__BoardGrid[iterRow][iterCol+1], self.__BoardGrid[iterRow][iterCol]
                         
         
             
         
         # If movement is along vertical axis, change second piece to 0 and double the first
         if(dir in [2, 3]):
-            for iter_eqls in self.adjacentEqls:
-                
-                if(iter_eqls[2] == 1):
-                        self.__BoardGrid[iter_eqls[0]-1][iter_eqls[1]-1] = 2 * self.__BoardGrid[iter_eqls[0]-1][iter_eqls[1]-1]
-                        
-                        self.__BoardGrid[iter_eqls[0]-2][iter_eqls[1]-1] = 0
-                        
-                        self.adjacentEqls.remove(iter_eqls)
 
+            # Moving all pieces where they need to be
+            if(dir == 2):
+                for iterRow in range(1, 4):
+                    
+                    for iterCol in range(0, 4):
+                        temp = iterRow - 1
+                        
+                        # Skip square if current square is empty
+                        if(self.__BoardGrid[iterRow][iterCol] == 0):
+                            continue
+                        
+                        # Finding the next non empty square
+                        while((temp >= 0) and (self.__BoardGrid[temp][iterCol] == 0)):
+                            temp -= 1
+                        
+                        temp += 1
+                        
+                        # Swapping empty space and current piece
+                        if(temp <= iterRow - 1):
+                            self.__BoardGrid[iterRow][iterCol], self.__BoardGrid[temp][iterCol] = self.__BoardGrid[temp][iterCol], self.__BoardGrid[iterRow][iterCol]
+            
+            if(dir == 3):
+                for iterRow in range(0, 3):
+                    
+                    for iterCol in range(0, 4):
+                        iterRow_rev = 2 - iterRow           # Iterating backwards through a row's column
+                        temp = iterRow_rev + 1
+                        
+                        # Skip square if current square is empty
+                        if(self.__BoardGrid[iterRow_rev][iterCol] == 0):
+                            continue
+                        
+                        # Finding the next non empty square
+                        while((temp < 4) and (self.__BoardGrid[temp][iterCol] == 0)):
+                            temp += 1
+                        
+                        temp -= 1
+                        
+                        # Swapping empty space and current piece
+                        if(temp >= iterRow_rev + 1):
+                            self.__BoardGrid[iterRow_rev][iterCol], self.__BoardGrid[temp][iterCol] = self.__BoardGrid[temp][iterCol], self.__BoardGrid[iterRow_rev][iterCol]
+            
+                   
     
     
     #### Member function used for debugging and tracking purposes (displays all variables)
@@ -195,8 +266,6 @@ class GameBoard:
             print(self.__BoardGrid[pr][3], " " * (6 - len(str(self.__BoardGrid[pr][3]))), end="\n\n")
         
         print("State: ", self.state)                        ## Printing the board state
-        
-        print("\n\nAdjacent Squares: ", self.adjacentEqls)  ## Printing the leftmost or topmost of the pair of all adjacent squares present ([ Row, Col, Axis ])
         
         print("\n\nEmpty Indices: ", self.emptySquares)     ## Printing list of indices of all empty squares on board
 
@@ -240,6 +309,8 @@ def main():
                 Board.movePieces(2)
             case "S":
                 Board.movePieces(3)
+            case _:
+                continue
         
         Board.checkState()
         
